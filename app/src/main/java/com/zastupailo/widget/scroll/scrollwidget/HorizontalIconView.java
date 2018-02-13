@@ -102,4 +102,58 @@ public class HorizontalIconView extends View {
         mDrawables = new ArrayList<>(drawables);
         mIconPosition.clear();
     }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        setMeasuredDimension(measureWidth(widthMeasureSpec), measureHeight(heightMeasureSpec));
+    }
+
+    private int measureHeight(int measureSpec){
+        int specMode = MeasureSpec.getMode(measureSpec);
+        int specSize = MeasureSpec.getSize(measureSpec);
+
+        int result;
+        if(specMode == MeasureSpec.EXACTLY){
+            result = specSize;
+        } else {
+            result = mIconSize + getPaddingTop() + getPaddingBottom();
+            if(specMode == MeasureSpec.AT_MOST){
+                result = Math.min(result, specSize);
+            }
+        }
+        return result;
+    }
+
+    private int measureWidth(int measureSpec){
+        int specMode = MeasureSpec.getMode(measureSpec);
+        int specSize = MeasureSpec.getSize(measureSpec);
+
+        final int icons = (mDrawables == null) ? 0 : mDrawables.size();
+        final int iconSpace = mIconSize * icons;
+        final int dividerSpace;
+        if(icons <= 1){
+            dividerSpace = 0;
+        } else {
+            dividerSpace = (icons - 1) * mIconSpacing;
+        }
+        final int maxSize = dividerSpace + iconSpace + getPaddingStart() + getPaddingEnd();
+
+        int result;
+        if(specMode == MeasureSpec.EXACTLY){
+            result = specSize;
+        } else {
+            if(specMode == MeasureSpec.AT_MOST){
+                result = Math.min(maxSize, specSize);
+            } else {
+                result = maxSize;
+            }
+        }
+
+        if(maxSize > result){
+            mScrollRange = maxSize - result;
+        } else {
+            mScrollRange = 0;
+        }
+        return result;
+    }
 }
