@@ -83,4 +83,23 @@ public class HorizontalIconView extends View {
         mScroller = new OverScroller(context);
         setFocusable(true);
     }
+
+    public void setDrawables(List<Drawable> drawables){
+        if(mDrawables == null){
+            if(drawables == null){
+                return;
+            }
+            requestLayout();
+        } else if(drawables == null){
+            requestLayout();
+            mDrawables = null;
+            return;
+        } else if(mDrawables.size() == drawables.size()){
+            invalidate();
+        } else {
+            requestLayout();
+        }
+        mDrawables = new ArrayList<>(drawables);
+        mIconPosition.clear();
+    }
 }
