@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.EdgeEffectCompat;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -170,6 +171,28 @@ public class HorizontalIconView extends View {
             left = left + mIconSize + mIconSpacing;
         }
 
+        if(mEdgeEffectLeft != null){
+            final int restoreCount = canvas.save();
+            canvas.rotate(270);
+            canvas.translate(-height, Math.min(0, leftEdge));
+            mEdgeEffectLeft.setSize(height, width);
+            if(mEdgeEffectLeft.draw(canvas)){
+                postInvalidateOnAnimation();
+            }
+            canvas.restoreToCount(restoreCount);
+        }
+
+        if(mEdgeEffectRight != null){
+            final int restoreCount = canvas.save();
+            canvas.rotate(90);
+            canvas.translate(0, -(Math.max(mScrollRange, leftEdge) + width));
+            mEdgeEffectLeft.setSize(height, width);
+            if(mEdgeEffectLeft.draw(canvas)){
+                postInvalidateOnAnimation();
+            }
+            canvas.restoreToCount(restoreCount);
+        }
+
     }
 
     @Override
@@ -193,6 +216,41 @@ public class HorizontalIconView extends View {
                 } else if (x > mScrollRange && oldX <= mScrollRange) {
                     mEdgeEffectRight.onAbsorb((int) mScroller.getCurrVelocity());
                 }
+            }
+        }
+    }
+
+    @Override
+    protected void onOverScrolled(int scrollX, int scrollY, boolean clampedX, boolean clampedY) {
+        if(mScroller.isFinished()){
+            super.scrollTo(scrollX, scrollY);
+        } else {
+            setScrollX(scrollX);
+            if(clampedX){
+                mScroller.springBack(scrollX, 0, 0, mScrollRange, 0, 0);
+            }
+        }
+    }
+
+    private void fling(int velocity){
+        if(mScrollRange == 0){
+            return;
+        }
+
+        final int halfWidth = (getWidth() - getPaddingLeft() - getPaddingRight())/2;
+        mScroller.fling(getScrollX(), 0, velocity, 0, 0, mScrollRange, 0, 0, halfWidth, 0);
+        invalidate();
+    }
+
+    private void onSecondaryPointerup(MotionEvent ev){
+        final int pointerIndex = MotionEventCompat.getActionIndex(ev);
+        final int pointerId = MotionEventCompat.getPointerId(ev, pointerIndex);
+        if(pointerId == mActivePointerId){
+            final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+            mPreviousX = ev.getX(newPointerIndex);
+            mActivePointerId = ev.getPointerId(newPointerIndex);
+            if(mVelocityTracker != null){
+                mVelocityTracker.clear();
             }
         }
     }
