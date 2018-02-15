@@ -242,6 +242,27 @@ public class HorizontalIconView extends View {
         invalidate();
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if(mVelocityTracker == null){
+            mVelocityTracker = VelocityTracker.obtain();
+        }
+        mVelocityTracker.addMovement(event);
+        final int action = MotionEventCompat.getActionMasked(event);
+        switch (action){
+            case MotionEvent.ACTION_DOWN:{
+                if(!mScroller.isFinished()){
+                    mScroller.abortAnimation();
+                }
+
+                mPreviousX = (int) MotionEventCompat.getX(event, 0);
+                mActivePointerId = MotionEventCompat.getPointerId(event, 0);
+                break;
+            }
+        }
+        return true;
+    }
+
     private void onSecondaryPointerup(MotionEvent ev){
         final int pointerIndex = MotionEventCompat.getActionIndex(ev);
         final int pointerId = MotionEventCompat.getPointerId(ev, pointerIndex);
