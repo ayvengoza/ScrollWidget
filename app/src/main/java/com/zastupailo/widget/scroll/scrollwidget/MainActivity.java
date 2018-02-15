@@ -13,7 +13,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
         final Resources res = getResources();
         final List<Drawable> list = new ArrayList<>();
@@ -44,6 +43,11 @@ public class MainActivity extends AppCompatActivity {
         list.add(res.getDrawable(R.drawable.x));
         list.add(res.getDrawable(R.drawable.y));
         list.add(res.getDrawable(R.drawable.z));
+
+        final HorizontalIconView view = new HorizontalIconView(this);
+        view.setDrawables(list);
+
+        setContentView(view);
 
     }
 }
