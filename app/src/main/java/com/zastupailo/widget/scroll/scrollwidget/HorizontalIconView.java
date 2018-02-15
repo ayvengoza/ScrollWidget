@@ -172,6 +172,31 @@ public class HorizontalIconView extends View {
 
     }
 
+    @Override
+    public void computeScroll() {
+        if(mScroller.computeScrollOffset()){
+            int oldX = getScrollX();
+            int x = mScroller.getCurrX();
+
+            if(oldX != x ){
+                overScrollBy(x - oldX,
+                        0,
+                        oldX,
+                        0,
+                        mScrollRange,
+                        0,
+                        mOverflingDistance, 0,
+                        false);
+                onScrollChanged(x, 0, oldX, 0);
+                if(x < 0 && oldX >= 0){
+                    mEdgeEffectLeft.onAbsorb((int) mScroller.getCurrVelocity());
+                } else if (x > mScrollRange && oldX <= mScrollRange) {
+                    mEdgeEffectRight.onAbsorb((int) mScroller.getCurrVelocity());
+                }
+            }
+        }
+    }
+
     private int measureWidth(int measureSpec){
         int specMode = MeasureSpec.getMode(measureSpec);
         int specSize = MeasureSpec.getSize(measureSpec);
