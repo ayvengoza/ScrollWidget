@@ -2,6 +2,7 @@ package com.zastupailo.widget.scroll.scrollwidget;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
@@ -11,7 +12,6 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.widget.EdgeEffect;
 import android.widget.OverScroller;
 
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ public class HorizontalIconView extends View {
     // lightning effect
     private EdgeEffectCompat mEdgeEffectLeft;
     private EdgeEffectCompat mEdgeEffectRight;
-    private final List<Rect> mIconPosition = new ArrayList<>();
+    private final List<Rect> mIconPositions = new ArrayList<>();
     private int mIconSize;
     private int mIconSpacing;
     private boolean mIsBeingDragged;
@@ -100,7 +100,7 @@ public class HorizontalIconView extends View {
             requestLayout();
         }
         mDrawables = new ArrayList<>(drawables);
-        mIconPosition.clear();
+        mIconPositions.clear();
     }
 
     @Override
@@ -122,6 +122,54 @@ public class HorizontalIconView extends View {
             }
         }
         return result;
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if(mDrawables == null || mDrawables.isEmpty()){
+            return;
+        }
+
+        final int width = getWidth();
+        final int height = getHeight();
+        final int paddingLeft = getPaddingLeft();
+        final int paddingTop = getPaddingTop();
+
+        final int leftEdge = getScrollX();
+        final int rightEdge = leftEdge + width;
+
+        int left = paddingLeft;
+        final int top = paddingTop;
+        mSkippedIconCount = 0;
+
+        final int iconCount = mDrawables.size();
+        for (int i = 0; i < iconCount; i++){
+            if(left + mIconSize <leftEdge) {
+                left = left + mIconSize + mIconSpacing;
+                mSkippedIconCount++;
+                continue;
+            }
+
+            if(left > rightEdge){
+                break;
+            }
+
+            final Drawable icon = mDrawables.get(i);
+            icon.setBounds(left, top, left + mIconSize, top + mIconSize);
+            icon.draw(canvas);
+
+            final int drawnPosition = i - mSkippedIconCount;
+            if(drawnPosition + 1 > mIconPositions.size()){
+                final Rect rect = icon.copyBounds();
+                mIconPositions.add(rect);
+            } else {
+                final Rect rect = mIconPositions.get(drawnPosition);
+                icon.copyBounds(rect);
+            }
+
+            left = left + mIconSize + mIconSpacing;
+        }
+
     }
 
     private int measureWidth(int measureSpec){
