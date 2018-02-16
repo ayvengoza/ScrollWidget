@@ -9,11 +9,13 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.EdgeEffectCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.OverScroller;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -248,6 +250,7 @@ public class HorizontalIconView extends View {
             mVelocityTracker = VelocityTracker.obtain();
         }
         mVelocityTracker.addMovement(event);
+
         final int action = MotionEventCompat.getActionMasked(event);
         switch (action){
             case MotionEvent.ACTION_DOWN:{
@@ -257,6 +260,123 @@ public class HorizontalIconView extends View {
 
                 mPreviousX = (int) MotionEventCompat.getX(event, 0);
                 mActivePointerId = MotionEventCompat.getPointerId(event, 0);
+                break;
+            }
+
+            case MotionEvent.ACTION_MOVE:{
+                final int activePointerIndex = MotionEventCompat.findPointerIndex(event, mActivePointerId);
+                if (activePointerIndex == INVALID_POINTER){
+                    Log.e(TAG, "Ivalid pointerId=" + mActivePointerId + " in onTouchEvent");
+                    break;
+                }
+
+                final int x = (int) MotionEventCompat.getX(event, 0);
+                int deltaX = (int) (mPreviousX - x);
+                if(!mIsBeingDragged && Math.abs(deltaX) > mTouchSlop){
+                    mIsBeingDragged = true;
+                    if(deltaX > 0){
+                        deltaX -= mTouchSlop;
+                    } else {
+                        deltaX += mTouchSlop;
+                    }
+                }
+                if (mIsBeingDragged){
+                    mPreviousX = x;
+
+                    final int oldX = getScrollX();
+                    final int range = mScrollRange;
+
+                    if(overScrollBy(deltaX, 0, oldX, 0, range, 0, mOverscrollDistance, 0, true)){
+                        mVelocityTracker.clear();
+                    }
+
+                    if(mEdgeEffectLeft !=null){
+                        final int pulledToX = oldX + deltaX;
+                        final int y = (int) MotionEventCompat.getY(event, 0);
+                        final float yDisplacement = 1 - ((float) y / getHeight());
+                        if(pulledToX < 0) {
+                            mEdgeEffectLeft.onPull((float) deltaX / getWidth(), yDisplacement);
+                            if(!mEdgeEffectRight.isFinished()){
+                                mEdgeEffectRight.onRelease();
+                            }
+                        } else if(pulledToX > range){
+                            mEdgeEffectRight.onPull((float) deltaX / getWidth(), yDisplacement);
+                            if(!mEdgeEffectLeft.isFinished()){
+                                mEdgeEffectLeft.onRelease();
+                            }
+                        }
+                        if(!mEdgeEffectLeft.isFinished() || !mEdgeEffectRight.isFinished()){
+                            postInvalidateOnAnimation();
+                        }
+                    }
+                }
+                break;
+            }
+
+            case MotionEvent.ACTION_UP:{
+                if(mIsBeingDragged){
+                    mVelocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
+                    int initialVelocity = (int) mVelocityTracker.getXVelocity(mActivePointerId);
+                    if ((Math.abs(initialVelocity) > mMinimumVelocity)){
+                        fling(-initialVelocity);
+                    } else {
+                        if(mScroller.springBack(getScrollX(), 0, 0, mScrollRange, 0, 0)){
+                            postInvalidateOnAnimation();
+                        }
+                    }
+
+                    mActivePointerId = INVALID_POINTER;
+                    mIsBeingDragged = false;
+                    mVelocityTracker.recycle();
+                    mVelocityTracker = null;
+
+                    if(mEdgeEffectLeft != null){
+                        mEdgeEffectLeft.onRelease();
+                        mEdgeEffectRight.onRelease();
+                    }
+                } else {
+                    final int activePointerIndex = event.findPointerIndex(mActivePointerId);
+                    if(activePointerIndex == INVALID_POINTER){
+                        return false;
+                    }
+                    final int x = (int) event.getX(activePointerIndex) + getScrollX();
+                    final int y = (int) event.getY(activePointerIndex);
+                    int i = 0;
+                    for(Rect rect : mIconPositions){
+                        if(rect.contains(x, y)){
+                            final int position = i + mSkippedIconCount;
+                            Toast.makeText(getContext(), "Plessed icon " + position +
+                            "; rect count: " + mIconPositions.size(), Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+                        i++;
+                    }
+                }
+                break;
+            }
+
+            case MotionEvent.ACTION_CANCEL:{
+                if(mIsBeingDragged){
+                    if(mScroller.springBack(getScrollX(), 0, 0, mScrollRange, 0, 0)){
+                        postInvalidateOnAnimation();
+                    }
+                    mActivePointerId = INVALID_POINTER;
+                    mIsBeingDragged = false;
+                    if(mVelocityTracker != null){
+                        mVelocityTracker.recycle();
+                        mVelocityTracker = null;
+                    }
+
+                    if(mEdgeEffectLeft != null){
+                        mEdgeEffectLeft.onRelease();
+                        mEdgeEffectRight.onRelease();
+                    }
+                }
+                break;
+            }
+
+            case MotionEvent.ACTION_POINTER_UP:{
+                onSecondaryPointerup(event);
                 break;
             }
         }
