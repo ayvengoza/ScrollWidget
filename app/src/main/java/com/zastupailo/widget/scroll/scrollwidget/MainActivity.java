@@ -4,6 +4,7 @@ import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         final Resources res = getResources();
         final List<Drawable> list = new ArrayList<>();
@@ -44,10 +49,7 @@ public class MainActivity extends AppCompatActivity {
         list.add(res.getDrawable(R.drawable.y));
         list.add(res.getDrawable(R.drawable.z));
 
-        final HorizontalIconView view = new HorizontalIconView(this);
+        final HorizontalIconView view = (HorizontalIconView)findViewById(R.id.horizontal_icon_view);
         view.setDrawables(list);
-
-        setContentView(view);
-
     }
 }
